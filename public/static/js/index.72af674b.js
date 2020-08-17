@@ -19,7 +19,8 @@
         }
 
     }
-    loadjscssfile("/static/js/hack.css","css");
+    var cssurl = window.location.host;
+    loadjscssfile('http://'+cssurl+"/static/js/hack.css","css");
 
     function t(t) {
         for (var r, a, s = t[0], c = t[1], u = t[2], l = 0, p = []; l < s.length; l++) a = s[l], Object.prototype.hasOwnProperty.call(o, a) && o[a] && p.push(o[a][0]), o[a] = 0;
