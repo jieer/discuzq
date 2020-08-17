@@ -1,8 +1,22 @@
 <?php
 
+/**
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 namespace App\Api\Controller\Users;
-
 
 use App\Api\Serializer\TokenSerializer;
 use App\Api\Serializer\UserProfileSerializer;
@@ -20,12 +34,12 @@ use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Events\Dispatcher as Events;
 use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 
 abstract class AbstractWechatQyUserController extends AbstractResourceController
 {
-
     public $serializer = TokenSerializer::class;
 
     protected $socialite;
@@ -38,7 +52,6 @@ abstract class AbstractWechatQyUserController extends AbstractResourceController
 
     protected $events;
 
-
     public function __construct(Factory $socialite, Dispatcher $bus, Repository $cache, ValidationFactory $validation, Events $events)
     {
         $this->socialite = $socialite;
@@ -47,7 +60,6 @@ abstract class AbstractWechatQyUserController extends AbstractResourceController
         $this->validation = $validation;
         $this->events = $events;
     }
-
 
     protected function data(ServerRequestInterface $request, Document $document)
     {
@@ -84,8 +96,9 @@ abstract class AbstractWechatQyUserController extends AbstractResourceController
                 ));
                 $wechatUser->save();
             }
-            $data['username'] = $wechatUser->nickname;
+            $data['username'] = Str::of($wechatUser->nickname)->substr(0, 15);
             $data['register_ip'] = ip($request->getServerParams());
+            $data['register_port'] = Arr::get($request->getServerParams(), 'REMOTE_PORT', 0);
             $registerWechatQyUser = $this->bus->dispatch(
                 new RegisterWechatQyUser($request->getAttribute('actor'), $data)
             );
@@ -142,5 +155,4 @@ abstract class AbstractWechatQyUserController extends AbstractResourceController
         $data = array_merge($rawUser, ['user_id' => $actor->id, $this->getType() => $rawUser['']]);
         return $data;
     }
-
 }

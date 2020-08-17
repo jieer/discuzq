@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Commands\Sms;
@@ -79,7 +90,6 @@ class VerifyMobile
 
     /**
      * @return mixed
-     * @throws PermissionDeniedException
      */
     protected function login()
     {
@@ -95,14 +105,23 @@ class VerifyMobile
             $this->mobileCode->setRelation('user', $user);
         }
 
+        //公众号绑定
         if ($token = Arr::get($this->params, 'token')) {
             $this->bind->wechat($token, $this->mobileCode->user);
-            // 判断是否开启了注册审核
             if (!(bool)$this->settings->get('register_validate')) {
                 // 在注册绑定微信后 发送注册微信通知
                 $this->mobileCode->user->notify(new System(WechatRegisterMessage::class));
             }
         }
+
+        //小程序绑定
+        if ($js_code = Arr::get($this->params, 'js_code') &&
+            $iv = Arr::has($this->params, 'iv') &&
+            $encryptedData = Arr::has($this->params, 'encryptedData')
+        ) {
+            $this->bind->bindMiniprogram($js_code, $iv, $encryptedData, $this->mobileCode->user);
+        }
+
 
         $this->events->dispatch(
             new Logind($this->mobileCode->user)

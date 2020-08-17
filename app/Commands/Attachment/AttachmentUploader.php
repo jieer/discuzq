@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Commands\Attachment;
@@ -70,8 +81,24 @@ class AttachmentUploader
          * 如果类型是 1（帖子图片）并且使用云存储，就使用云上数据处理，生成高斯模糊图。
          * @see https://cloud.tencent.com/document/product/460/18147#.E4.BA.91.E4.B8.8A.E6.95.B0.E6.8D.AE.E5.A4.84.E7.90.86
          */
+        $fileName = $this->file->hashName();
+        $this->put($type, $this->file, $fileName, $this->path, $options);
+    }
+
+    /**
+     * @param int $type 附件类型
+     * @param mixed $file 文件
+     * @param string $fileName 文件名
+     * @param string $path 路径
+     * @param array $options
+     * @return void
+     */
+    public function put($type, $file, $fileName, $path = '', $options = [])
+    {
+        $path = $path ?: $this->path;
+
         if ($type === Attachment::TYPE_OF_IMAGE && $this->isRemote()) {
-            [$hash, $extension] = explode('.', $this->file->hashName());
+            [$hash, $extension] = explode('.', $fileName);
 
             $options = array_merge($this->options, [
                 'header' => [
@@ -84,10 +111,10 @@ class AttachmentUploader
                         ],
                     ]),
                 ]
-            ]);
+            ], $options);
         }
 
-        $this->filesystem->put($this->path, $this->file, $options);
+        $this->filesystem->put($path, $file, $options);
     }
 
     /**

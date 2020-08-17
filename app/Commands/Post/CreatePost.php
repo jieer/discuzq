@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Commands\Post;
@@ -137,7 +148,8 @@ class CreatePost
                 }
 
                 // 检查是否在同一主题下的
-                $this->replyUserId = $post->where('id', $this->replyPostId)
+                $this->replyUserId = $post->newQuery()
+                    ->where('id', $this->replyPostId)
                     ->where('thread_id', $thread->id)
                     ->value('user_id');
 
@@ -167,9 +179,9 @@ class CreatePost
 
         // 存在审核敏感词时，将回复内容放入待审核
         if ($censor->isMod) {
-            $post->is_approved = 0;
+            $post->is_approved = Post::UNAPPROVED;
         } else {
-            $post->is_approved = 1;
+            $post->is_approved = Post::APPROVED;
         }
 
         $post->raise(new Created($post, $this->actor, $this->data));
@@ -183,7 +195,7 @@ class CreatePost
         $post->save();
 
         // 记录触发的审核词
-        if ($post->is_approved == 0 && $censor->wordMod) {
+        if ($post->is_approved === Post::UNAPPROVED && $censor->wordMod) {
             $stopWords = new PostMod;
             $stopWords->stop_word = implode(',', array_unique($censor->wordMod));
 

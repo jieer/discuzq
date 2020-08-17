@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Api\Controller\Users;
@@ -55,6 +66,7 @@ class LoginController extends AbstractResourceController
      * @param Document $document
      * @return array|mixed
      * @throws ValidationException
+     * @throws \Discuz\Socialite\Exception\SocialiteException
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
@@ -72,12 +84,19 @@ class LoginController extends AbstractResourceController
         if ($response->getStatusCode() === 200) {
             $user = $this->app->make(UserRepository::class)->getUser();
 
+            //绑定公众号信息
             if ($token = Arr::get($data, 'token')) {
                 $this->bind->wechat($token, $user);
             }
 
-            $this->events->dispatch(new Logind($user));
+            //绑定小程序信息
+            if ($js_code = Arr::get($data, 'js_code') &&
+                $iv = Arr::has($data, 'iv') &&
+                $encryptedData = Arr::has($data, 'encryptedData')) {
+                $this->bind->bindMiniprogram($js_code, $iv, $encryptedData, $user);
+            }
 
+            $this->events->dispatch(new Logind($user));
         }
         return json_decode($response->getBody());
     }

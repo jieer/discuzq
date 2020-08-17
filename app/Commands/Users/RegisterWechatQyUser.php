@@ -1,8 +1,22 @@
 <?php
 
+/**
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 namespace App\Commands\Users;
-
 
 use App\Censor\Censor;
 use App\Censor\CensorNotPassedException;
@@ -21,7 +35,6 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterWechatQyUser
 {
-
     use EventsDispatchTrait;
 
     /**
@@ -71,7 +84,7 @@ class RegisterWechatQyUser
                 throw new CensorNotPassedException();
             }
         } catch (CensorNotPassedException $e) {
-            $this->data['username'] = $this->getNewUsername();
+            $this->data['username'] =  User::getNewUsername();
         }
 
         // 审核模式，设置注册为审核状态
@@ -85,7 +98,7 @@ class RegisterWechatQyUser
             $this->data['expired_at'] = Carbon::now();
         }
 
-        $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_reason', 'status']));
+        $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_port', 'register_reason', 'status']));
 
         $this->events->dispatch(
             new Saving($user, $this->actor, $this->data)
@@ -99,16 +112,4 @@ class RegisterWechatQyUser
 
         return $user;
     }
-
-
-    private function getNewUsername()
-    {
-        $username = trans('validation.attributes.username_prefix') . Str::random(6);
-        $user = User::where('username', $username)->first();
-        if ($user) {
-            return $this->getNewUsername();
-        }
-        return $username;
-    }
-
 }

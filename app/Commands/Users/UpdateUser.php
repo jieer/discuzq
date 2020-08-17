@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Commands\Users;
@@ -95,9 +106,14 @@ class UpdateUser
             if ($isSelf) {
                 //小程序注册的账号密码为空，不验证旧密码
                 if ($this->actor->password != '') {
-                    $verifyPwd = $user->checkPassword(Arr::get($attributes, 'password'));
-                    if (!$verifyPwd) {
+                    // 验证原密码
+                    if (! $user->checkPassword(Arr::get($attributes, 'password'))) {
                         throw new TranslatorException('user_update_error', ['not_match_used_password']);
+                    }
+
+                    // 验证新密码与原密码不能相同
+                    if ($user->checkPassword($newPassword)) {
+                        throw new TranslatorException('user_update_error', ['cannot_use_the_same_password']);
                     }
                 }
 
@@ -229,8 +245,8 @@ class UpdateUser
                 }
             }
         }
-
-        if ($username = Arr::get($attributes, 'username')) {
+        $username = Arr::get($attributes, 'username');
+        if ($username && $username != $user->username) {
             $validator['username'] = $username;
 
             // 敏感词校验
@@ -250,7 +266,6 @@ class UpdateUser
             }
 
             $user->changeUsername($username, $isAdmin);
-
         }
 
         if (Arr::has($attributes, 'signature')) {
